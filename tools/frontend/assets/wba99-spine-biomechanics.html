@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>WBA99 Spine Biomechanics</title>
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --card: #111827;
+      --border: #1f2937;
+      --accent: #00bcd4;
+      --accent2: #9c27b0;
+      --accent3: #ff5722;
+      --gold: #ffd700;
+      --green: #22c55e;
+      --red: #ef4444;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 100px;
+    }
+    .header {
+      background: linear-gradient(135deg, #0d1b2a, #1a3a5c);
+      padding: 20px;
+      text-align: center;
+      border-bottom: 2px solid var(--accent);
+    }
+    .logo { font-size: 28px; font-weight: bold; color: var(--gold); }
+    .subtitle { font-size: 12px; color: var(--accent); margin-top: 4px; letter-spacing: 2px; }
+    
+    .tabs {
+      display: flex;
+      overflow-x: auto;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      -webkit-overflow-scrolling: touch;
+    }
+    .tab {
+      flex: 0 0 auto;
+      padding: 12px 16px;
+      font-size: 11px;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.3s;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(0,188,212,0.1); }
+    .tab-icon { font-size: 16px; display: block; margin-bottom: 2px; }
+    
+    .content { padding: 16px; }
+    .section { display: none; }
+    .section.active { display: block; }
+    
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title span { font-size: 18px; }
+    
+    .input-group { margin-bottom: 12px; }
+    .input-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; display: block; }
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 16px;
+    }
+    .input-field:focus { outline: none; border-color: var(--accent); }
+    
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 12px;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #0097a7); color: #000; }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-success { background: linear-gradient(135deg, var(--green), #16a34a); color: #fff; }
+    .btn-danger { background: linear-gradient(135deg, var(--red), #dc2626); color: #fff; }
+    
+    .result-box {
+      background: linear-gradient(135deg, rgba(0,188,212,0.1), rgba(156,39,176,0.1));
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .result-value { font-size: 32px; font-weight: bold; color: var(--gold); text-align: center; }
+    .result-label { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
+    .result-status { 
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+    .status-normal { background: rgba(34,197,94,0.2); color: var(--green); }
+    .status-abnormal { background: rgba(239,68,68,0.2); color: var(--red); }
+    .status-warning { background: rgba(245,158,11,0.2); color: #f59e0b; }
+    
+    .test-item {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+    .test-item:hover { border-color: var(--accent); }
+    .test-item.completed { border-color: var(--green); background: rgba(34,197,94,0.05); }
+    .test-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .test-info { flex: 1; }
+    .test-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .test-desc { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .test-status { font-size: 18px; }
+    
+    .measurement-display {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .measure-box {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .measure-value { font-size: 24px; font-weight: bold; color: var(--accent); }
+    .measure-unit { font-size: 12px; color: var(--muted); }
+    .measure-label { font-size: 10px; color: var(--muted); margin-top: 4px; }
+    
+    .spine-diagram {
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(180deg, var(--bg) 0%, rgba(0,188,212,0.05) 100%);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .spine-svg { width: 100%; height: 100%; }
+    
+    .imu-display {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 16px 0;
+    }
+    .imu-box {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .imu-value { font-size: 20px; font-weight: bold; color: var(--gold); }
+    .imu-label { font-size: 9px; color: var(--muted); }
+    
+    .sensor-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--card);
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .sensor-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .sensor-dot.inactive { background: var(--red); animation: none; }
+    
+    .range-indicator {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      margin-top: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .range-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s;
+    }
+    .range-normal { background: linear-gradient(90deg, var(--green), #4ade80); }
+    .range-warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .range-danger { background: linear-gradient(90deg, var(--red), #f87171); }
+    
+    .instructions {
+      background: rgba(0,188,212,0.1);
+      border-left: 3px solid var(--accent);
+      padding: 12px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 16px;
+    }
+    .instructions-title { font-size: 12px; font-weight: bold; color: var(--accent); margin-bottom: 6px; }
+    .instructions-text { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    
+    .patient-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    .summary-table th {
+      background: var(--accent);
+      color: #000;
+      padding: 10px 8px;
+      font-size: 11px;
+      text-align: left;
+    }
+    .summary-table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .summary-table tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+    
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+    }
+    .bottom-bar .btn { flex: 1; margin: 0; }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: var(--card);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-title { font-size: 16px; font-weight: bold; color: var(--accent); }
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--border);
+      border: none;
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+    }
+    
+    .recording-indicator {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(239,68,68,0.2);
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .recording-indicator.active { display: flex; }
+    .rec-dot {
+      width: 12px;
+      height: 12px;
+      background: var(--red);
+      border-radius: 50%;
+      animation: recPulse 1s infinite;
+    }
+    @keyframes recPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+    .rec-text { font-size: 12px; font-weight: bold; color: var(--red); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">WBA99 SPINE</div>
+    <div class="subtitle">COMPLETE BIOMECHANICS ANALYSIS</div>
+  </div>
+  
+  <div class="tabs">
+    <div class="tab active" onclick="showSection('patient')">
+      <span class="tab-icon">👤</span>Patient
+    </div>
+    <div class="tab" onclick="showSection('length')">
+      <span class="tab-icon">📏</span>Length
+    </div>
+    <div class="tab" onclick="showSection('lumbar')">
+      <span class="tab-icon">🔸</span>Lumbar
+    </div>
+    <div class="tab" onclick="showSection('thoracic')">
+      <span class="tab-icon">🔹</span>Thoracic
+    </div>
+    <div class="tab" onclick="showSection('cervical')">
+      <span class="tab-icon">🔷</span>Cervical
+    </div>
+    <div class="tab" onclick="showSection('special')">
+      <span class="tab-icon">⚡</span>Special
+    </div>
+    <div class="tab" onclick="showSection('imu')">
+      <span class="tab-icon">📱</span>IMU
+    </div>
+    <div class="tab" onclick="showSection('report')">
+      <span class="tab-icon">📄</span>Report
+    </div>
+  </div>
+  
+  <div class="content">
+    <!-- PATIENT SECTION -->
+    <div id="patient" class="section active">
+      <div class="card">
+        <div class="card-title"><span>👤</span> Patient Information</div>
+        <div class="patient-info">
+          <div class="input-group">
+            <label class="input-label">Patient Name</label>
+            <input type="text" class="input-field" id="patientName" placeholder="Full Name">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Age</label>
+            <input type="number" class="input-field" id="patientAge" placeholder="Years">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Gender</label>
+            <select class="input-field" id="patientGender">
+              <option value="">Select</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Height (cm)</label>
+            <input type="number" class="input-field" id="patientHeight" placeholder="cm">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Weight (kg)</label>
+            <input type="number" class="input-field" id="patientWeight" placeholder="kg">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Date</label>
+            <input type="date" class="input-field" id="examDate">
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Chief Complaint</label>
+          <input type="text" class="input-field" id="complaint" placeholder="e.g., Lower back pain">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Diagnosis</label>
+          <input type="text" class="input-field" id="diagnosis" placeholder="e.g., Lumbar spondylosis">
+        </div>
+      </div>
+    </div>
+    
+    <!-- SPINE LENGTH SECTION -->
+    <div id="length" class="section">
+      <div class="card">
+        <div class="card-title"><span>📏</span> True Spine Length (C7 → S2)</div>
+        <div class="instructions">
+          <div class="instructions-title">📋 Procedure</div>
+          <div class="instructions-text">
+            1. Patient standing erect<br>
+            2. Mark C7 spinous process (prominent vertebra at neck base)<br>
+            3. Mark S2 (at sacral dimples level)<br>
+            4. Measure with tape in cm
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">C7 to S2 Distance (cm)</label>
+          <input type="number" class="input-field" id="spineLength" placeholder="e.g., 55" step="0.1">
+        </div>
+        <button class="btn btn-primary" onclick="calculateSpineLength()">Calculate</button>
+        <div class="result-box" id="spineLengthResult" style="display:none;">
+          <div class="result-value" id="spineLengthValue">--</div>
+          <div class="result-label">True Spine Length</div>
+          <div id="spineLengthStatus"></div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title"><span>📐</span> Sitting vs Standing Height</div>
+        <div class="instructions">
+          <div class="instructions-title">📋 Purpose</div>
+          <div class="instructions-text">
+            Detects spinal compression. Difference indicates disc hydration status and spinal loading.
+          </div>
+        </div>
+        <div class="patient-info">
+          <div class="input-group">
+            <label class="input-label">Standing Height (cm)</label>
+            <input type="number" class="input-field" id="standingHeight" placeholder="cm" step="0.1">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Sitting Height (cm)</label>
+            <input type="number" class="input-field" id="sittingHeight" placeholder="cm" step="0.1">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="calculateHeightDiff()">Calculate Difference</button>
+        <div class="result-box" id="heightDiffResult" style="display:none;">
+          <div class="measurement-display">
+            <div class="measure-box">
+              <div class="measure-value" id="trunkLength">--</div>
+              <div class="measure-unit">cm</div>
+              <div class="measure-label">Trunk Length</div>
+            </div>
+            <div class="measure-box">
+              <div class="measure-value" id="sitStandRatio">--</div>
+              <div class="measure-unit">%</div>
+              <div class="measure-label">Sit/Stand Ratio</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- LUMBAR SECTION -->
+    <div id="lumbar" class="section">
+      <div class="card">
+        <div class="card-title"><span>🔸</span> Schober's Test (Lumbar Flexion)</div>
+        <div class="instructions">
+          <div class="instructions-title">📋 Procedure</div>
+          <div class="instructions-text">
+            1. Mark 10 cm above PSIS (L5 level)<br>
+            2. Mark 5 cm below PSIS<br>
+            3. Patient bends forward maximally<br>
+            4. Re-measure distance<br>
+            <b>Normal: Increase ≥ 5 cm</b>
+          </div>
+        </div>
+        <div class="patient-info">
+          <div class="input-group">
+            <label class="input-label">Initial Distance (cm)</label>
+            <input type="number" class="input-field" id="schoberInit" value="15" step="0.1">
+          </div>
+          <div class="input-group">
+            <label class="input-label">After Flexion (cm)</label>
+            <input type="number" class="input-field" id="schoberFlex" placeholder="e.g., 20" step="0.1">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="calculateSchober()">Calculate</button>
+        <div class="result-box" id="schoberResult" style="display:none;">
+          <div class="result-value" id="schoberValue">--</div>
+          <div class="result-label">Lumbar Flexion (Schober's)</div>
+          <div class="range-indicator">
+            <div class="range-fill" id="schoberBar" style="width:0%"></div>
+          </div>
+          <div id="schoberStatus" style="text-align:center;margin-top:8px;"></div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title"><span>🔸</span> Modified Schober's Test</div>
+        <div class="instructions">
+          <div class="instructions-title">📋 Procedure</div>
+          <div class="instructions-text">
+            1. Mark 15 cm above + 5 cm below PSIS<br>
+            2. Total initial distance = 20 cm<br>
+            3. Patient bends forward<br>
+            <b>Normal: Increase ≥ 6 cm (to 26+ cm)</b>
+          </div>
+        </div>
+        <div class="patient-info">
+          <div class="input-group">
+            <label class="input-label">Initial (cm)</label>
+            <input type="number" class="input-field" id="modSchoberInit" value="20" step="0.1">
+          </div>
+          <div class="input-group">
+            <label class="input-label">After Flexion (cm)</label>
+            <input type="number" class="input-field" id="modSchoberFlex" placeholder="e.g., 26" step="0.1">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="calculateModSchober()">Calculate</button>
+        <div class="result-box" id="modSchoberResult" style="display:none;">
+          <div class="result-value" id="modSchoberValue">--</div>
+          <div class="result-label">Modified Schober's Increase</div>
+          <div id="modSchoberStatus" style="text-align:center;margin-top:8px;"></div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title"><span>🔸</span> Fingertip-to-Floor Test</div>
+        <div class="instructions">
+          <div class="instructions-title">📋 Procedure</div>
+          <div class="instructions-text">
+            1. Patient standing, feet together<br>
+            2. Bend forward, knees straight<br>
+            3. Measure distance from fingertips to floor<br>
+            <b>Normal: 0 cm (touch floor)</b>
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Fingertip-to-Floor Distance (cm)</label>
+          <input type="number" class="input-field" id="ftfDistance" placeholder="e.g., 0" step="0.1">
+        </div>
+        <button class="btn btn-primary" onclick="calculateFTF()">Calculate</button>
+        <div class="result-box" id="ftfResult" style="display:none;">
+          <div class="result-value" id="ftfValue">--</div>
+          <div class="result-label">Fingertip-to-Floor</div>
+          <div id="ftfStatus" style="text-align:center;margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- THORACIC SECTION -->
+    <div id="thoracic" class="section">
+      <div class="card">
+        <div class="card-title"><span>🔹</span> Chest Expansion Test</div>
+        <div class="instructions">
+          <div class="instructions-title">📋 Procedure</div>
+          <div class="instructions-text">
+            1. Measure chest circumference at nipple line<br>
+            2. Full expiration measurement<br>
+            3. Full inspiration measurement<br>
+            <b>Normal: ≥ 5 cm expansion (young adults)</b><br>
+            Reduced in: Ankylosing spondylitis
+          </div>
+        </div>
+        <div class="patient-info">
+          <div class="input-group">
+            <label class="input-label">Expiration (cm)</label>
+            <input type="number" class="input-field" id="chestExp" placeholder="e.g., 85" step="0.1">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Inspiration (cm)</label>
+            <input type="number" class="input-field" id="chestInsp" placeholder="e.g., 92" step="0.1">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="calculateChestExp()">Calculate Expansion</button>
+        <div class="result-box" id="chestExpResult" style="display:none;">
+          <div class="result-value" id="chestExpValue">--</div>
+          <div class="result-label">Chest Expansion</div>
+          <div id="chestExpStatus" style="text-align:center;margin-top:8px;"></div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title"><span>🔹</span> Ott's Sign (Thoracic Flexion)</div>
+        <div class="instructions">
+          <div class="instructions-title">📋 Procedure</div>
+          <div class="instructions-text">
+            1. Mark C7 spinous process<br>
+            2. Mark 30 cm below C7<br>
+            3. Patient bends forward<br>
+            4. Re-measure distance<br>
+            <b>Normal: +2 to +4 cm increase</b>
+          </div>
+        </div>
+        <div class="patient-info">
+          <div class="input-group">
+            <label class="input-label">Initial (cm)</label>
+            <input type="number" class="input-field" id="ottInit" value="30" step="0.1">
+          </div>
+          <div class="input-group">
+            <label class="input-label">After Flexion (cm)</label>
+            <input type="number" class="input-field" id="ottFlex" placeholder="e.g., 33" step="0.1">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="calculateOtt()">Calculate</button>
+        <div class="result-box" id="ottResult" style="display:none;">
+          <div class="result-value" id="ottValue">--</div>
+          <div class="result-label">Ott's Sign (Thoracic Mobility)</div>
+          <div id="ottStatus" style="text-align:center;margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- CERVICAL SECTION -->
+    <div id="cervical" class="section">
+      <div class="card">
+        <div class="card-title"><span>🔷</span> Cervical Range of Motion</div>
+        <div class="instructions">
+          <div class="instructions-title">📋 Use IMU or Goniometer</div>
+          <div class="instructions-text">
+            Place phone on forehead for accurate measurement using device sensors.
+          </div>
+        </div>
+        <div class="measurement-display">
+          <div class="measure-box">
+            <div class="measure-value" id="cervFlexion">--</div>
+            <div class="measure-unit">°</div>
+            <div class="measure-label">Flexion (N: 45-50°)</div>
+          </div>
+          <div class="measure-box">
+            <div class="measure-value" id="cervExtension">--</div>
+            <div class="measure-unit">°</div>
+            <div class="measure-label">Extension (N: 45-50°)</div>
+          </div>
+          <div class="measure-box">
+            <div class="measure-value" id="cervRotL">--</div>
+            <div class="measure-unit">°</div>
+            <div class="measure-label">Rotation L (N: 80°)</div>
+          </div>
+          <div class="measure-box">
+            <div class="measure-value" id="cervRotR">--</div>
+            <div class="measure-unit">°</div>
+            <div class="measure-label">Rotation R (N: 80°)</div>
+          </div>
+          <div class="measure-box">
+            <div class="measure-value" id="cervLatL">--</div>
+            <div class="measure-unit">°</div>
+            <div class="measure-label">Lat Flex L (N: 45°)</div>
+          </div>
+          <div class="measure-box">
+            <div class="measure-value" id="cervLatR">--</div>
+            <div class="measure-unit">°</div>
+            <div class="measure-label">Lat Flex R (N: 45°)</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="startCervicalIMU()">📱 Start IMU Measurement</button>
+      </div>
+      
+      <div class="card">
+        <div class="card-title"><span>🔷</span> Chin-to-Chest Distance</div>
+        <div class="instructions">
+          <div class="instructions-title">📋 Procedure</div>
+          <div class="instructions-text">
+            Patient attempts to touch chin to chest.<br>
+            <b>Normal: 0 cm (chin touches chest)</b>
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Chin-to-Chest Distance (cm)</label>
+          <input type="number" class="input-field" id="chinChest" placeholder="e.g., 0" step="0.1">
+        </div>
+        <button class="btn btn-primary" onclick="calculateChinChest()">Evaluate</button>
+        <div class="result-box" id="chinChestResult" style="display:none;">
+          <div class="result-value" id="chinChestValue">--</div>
+          <div class="result-label">Chin-to-Chest</div>
+          <div id="chinChestStatus" style="text-align:center;margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- SPECIAL TESTS SECTION -->
+    <div id="special" class="section">
+      <div class="card">
+        <div class="card-title"><span>⚡</span> Special Clinical Tests</div>
+        
+        <div class="test-item" onclick="openTestModal('adams')">
+          <div class="test-icon" style="background:rgba(0,188,212,0.2);">🔄</div>
+          <div class="test-info">
+            <div class="test-name">Adam's Forward Bend Test</div>
+            <div class="test-desc">Scoliosis screening - detects rib hump</div>
+          </div>
+          <div class="test-status" id="adamsStatus">○</div>
+        </div>
+        
+        <div class="test-item" onclick="openTestModal('slr')">
+          <div class="test-icon" style="background:rgba(255,87,34,0.2);">🦵</div>
+          <div class="test-info">
+            <div class="test-name">Straight Leg Raise (SLR)</div>
+            <div class="test-desc">Sciatic nerve tension test</div>
+          </div>
+          <div class="test-status" id="slrStatus">○</div>
+        </div>
+        
+        <div class="test-item" onclick="openTestModal('slump')">
+          <div class="test-icon" style="background:rgba(156,39,176,0.2);">🪑</div>
+          <div class="test-info">
+            <div class="test-name">Slump Test</div>
+            <div class="test-desc">Neural mobility assessment</div>
+          </div>
+          <div class="test-status" id="slumpStatus">○</div>
+        </div>
+        
+        <div class="test-item" onclick="openTestModal('spurling')">
+          <div class="test-icon" style="background:rgba(233,30,99,0.2);">💫</div>
+          <div class="test-info">
+            <div class="test-name">Spurling's Test</div>
+            <div class="test-desc">Cervical nerve root compression</div>
+          </div>
+          <div class="test-status" id="spurlingStatus">○</div>
+        </div>
+        
+        <div class="test-item" onclick="openTestModal('kemp')">
+          <div class="test-icon" style="background:rgba(255,193,7,0.2);">⬇️</div>
+          <div class="test-info">
+            <div class="test-name">Kemp's Test</div>
+            <div class="test-desc">Lumbar facet joint dysfunction</div>
+          </div>
+          <div class="test-status" id="kempStatus">○</div>
+        </div>
+        
+        <div class="test-item" onclick="openTestModal('faber')">
+          <div class="test-icon" style="background:rgba(76,175,80,0.2);">🦴</div>
+          <div class="test-info">
+            <div class="test-name">FABER / Patrick's Test</div>
+            <div class="test-desc">Hip & SI joint pathology</div>
+          </div>
+          <div class="test-status" id="faberStatus">○</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- IMU SECTION -->
+    <div id="imu" class="section">
+      <div class="sensor-status">
+        <div class="sensor-dot" id="sensorDot"></div>
+        <span id="sensorStatusText">Sensor Ready</span>
+      </div>
+      
+      <div class="recording-indicator" id="recIndicator">
+        <div class="rec-dot"></div>
+        <span class="rec-text">RECORDING</span>
+      </div>
+      
+      <div class="card">
+        <div class="card-title"><span>📱</span> 9-Axis IMU Data</div>
+        <div class="imu-display">
+          <div class="imu-box">
+            <div class="imu-value" id="imuPitch">0°</div>
+            <div class="imu-label">PITCH</div>
+          </div>
+          <div class="imu-box">
+            <div class="imu-value" id="imuRoll">0°</div>
+            <div class="imu-label">ROLL</div>
+          </div>
+          <div class="imu-box">
+            <div class="imu-value" id="imuYaw">0°</div>
+            <div class="imu-label">YAW</div>
+          </div>
+        </div>
+        <div class="imu-display">
+          <div class="imu-box">
+            <div class="imu-value" id="imuAccX">0</div>
+            <div class="imu-label">ACC X</div>
+          </div>
+          <div class="imu-box">
+            <div class="imu-value" id="imuAccY">0</div>
+            <div class="imu-label">ACC Y</div>
+          </div>
+          <div class="imu-box">
+            <div class="imu-value" id="imuAccZ">0</div>
+            <div class="imu-label">ACC Z</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="calibrateIMU()">🎯 Zero / Calibrate</button>
+      </div>
+      
+      <div class="card">
+        <div class="card-title"><span>📊</span> Digital Schober (IMU-Based)</div>
+        <div class="instructions">
+          <div class="instructions-title">📋 Digital Procedure</div>
+          <div class="instructions-text">
+            1. Place phone flat on patient's lumbar spine<br>
+            2. Press "Calibrate" to zero<br>
+            3. Press "Start" - patient bends forward<br>
+            4. Phone captures angular change<br>
+            5. Press "Stop" when fully flexed
+          </div>
+        </div>
+        <div class="measurement-display">
+          <div class="measure-box">
+            <div class="measure-value" id="digitalSchoberAngle">0°</div>
+            <div class="measure-label">Lumbar Flexion Angle</div>
+          </div>
+          <div class="measure-box">
+            <div class="measure-value" id="digitalSchoberMax">0°</div>
+            <div class="measure-label">Max Recorded</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-success" onclick="startDigitalSchober()" style="flex:1;">▶ Start</button>
+          <button class="btn btn-danger" onclick="stopDigitalSchober()" style="flex:1;">⬛ Stop</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- REPORT SECTION -->
+    <div id="report" class="section">
+      <div class="card">
+        <div class="card-title"><span>📄</span> Assessment Summary</div>
+        <table class="summary-table" id="summaryTable">
+          <thead>
+            <tr>
+              <th>Test</th>
+              <th>Value</th>
+              <th>Normal</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="summaryBody">
+            <tr><td colspan="4" style="text-align:center;color:var(--muted);">Complete tests to generate summary</td></tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <button class="btn btn-primary" onclick="generatePDF()">📄 Generate PDF Report</button>
+      <button class="btn btn-secondary" onclick="exportJSON()">💾 Export Data (JSON)</button>
+    </div>
+  </div>
+  
+  <!-- Test Modal -->
+  <div class="modal" id="testModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle">Test</div>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+  
+  <div class="bottom-bar">
+    <button class="btn btn-secondary" onclick="resetAll()">🔄 Reset</button>
+    <button class="btn btn-primary" onclick="generatePDF()">📄 PDF</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    // Data storage
+    let testResults = {};
+    let imuData = { pitch: 0, roll: 0, yaw: 0, accX: 0, accY: 0, accZ: 0 };
+    let imuOffset = { pitch: 0, roll: 0, yaw: 0 };
+    let isRecording = false;
+    let maxPitch = 0;
+    let sensorActive = false;
+    
+    // Initialize
+    document.getElementById('examDate').valueAsDate = new Date();
+    initIMU();
+    
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      event.target.closest('.tab').classList.add('active');
+    }
+    
+    // Spine Length Calculations
+    function calculateSpineLength() {
+      const length = parseFloat(document.getElementById('spineLength').value);
+      if (!length) return alert('Enter spine length');
+      
+      const height = parseFloat(document.getElementById('patientHeight').value) || 170;
+      const expectedLength = height * 0.33; // ~33% of height
+      const diff = ((length - expectedLength) / expectedLength * 100).toFixed(1);
+      
+      document.getElementById('spineLengthValue').textContent = length + ' cm';
+      document.getElementById('spineLengthResult').style.display = 'block';
+      
+      let status, statusClass;
+      if (Math.abs(diff) <= 5) {
+        status = 'Normal spine length';
+        statusClass = 'status-normal';
+      } else if (diff < -5) {
+        status = 'Potential compression (' + diff + '%)';
+        statusClass = 'status-warning';
+      } else {
+        status = 'Above expected (' + diff + '%)';
+        statusClass = 'status-warning';
+      }
+      
+      document.getElementById('spineLengthStatus').innerHTML = 
+        `<span class="result-status ${statusClass}">${status}</span>`;
+      
+      testResults['spineLength'] = { value: length, unit: 'cm', status: status };
+      updateSummary();
+    }
+    
+    function calculateHeightDiff() {
+      const standing = parseFloat(document.getElementById('standingHeight').value);
+      const sitting = parseFloat(document.getElementById('sittingHeight').value);
+      if (!standing || !sitting) return alert('Enter both heights');
+      
+      const trunk = (standing - (standing - sitting)).toFixed(1);
+      const ratio = ((sitting / standing) * 100).toFixed(1);
+      
+      document.getElementById('trunkLength').textContent = (standing - sitting).toFixed(1);
+      document.getElementById('sitStandRatio').textContent = ratio;
+      document.getElementById('heightDiffResult').style.display = 'block';
+      
+      testResults['sitStandRatio'] = { value: ratio, unit: '%', status: ratio > 50 ? 'Normal' : 'Low' };
+      updateSummary();
+    }
+    
+    // Schober's Tests
+    function calculateSchober() {
+      const init = parseFloat(document.getElementById('schoberInit').value);
+      const flex = parseFloat(document.getElementById('schoberFlex').value);
+      if (!flex) return alert('Enter flexion measurement');
+      
+      const increase = (flex - init).toFixed(1);
+      document.getElementById('schoberValue').textContent = '+' + increase + ' cm';
+      document.getElementById('schoberResult').style.display = 'block';
+      
+      const percent = Math.min((increase / 5) * 100, 100);
+      const bar = document.getElementById('schoberBar');
+      bar.style.width = percent + '%';
+      
+      let status, statusClass;
+      if (increase >= 5) {
+        status = '✓ Normal lumbar mobility';
+        statusClass = 'status-normal';
+        bar.className = 'range-fill range-normal';
+      } else if (increase >= 3) {
+        status = '⚠ Mild restriction';
+        statusClass = 'status-warning';
+        bar.className = 'range-fill range-warning';
+      } else {
+        status = '✗ Significant restriction';
+        statusClass = 'status-abnormal';
+        bar.className = 'range-fill range-danger';
+      }
+      
+      document.getElementById('schoberStatus').innerHTML = 
+        `<span class="result-status ${statusClass}">${status}</span>`;
+      
+      testResults['schober'] = { value: '+' + increase, unit: 'cm', normal: '≥5 cm', status: status };
+      updateSummary();
+    }
+    
+    function calculateModSchober() {
+      const init = parseFloat(document.getElementById('modSchoberInit').value);
+      const flex = parseFloat(document.getElementById('modSchoberFlex').value);
+      if (!flex) return alert('Enter flexion measurement');
+      
+      const increase = (flex - init).toFixed(1);
+      document.getElementById('modSchoberValue').textContent = '+' + increase + ' cm';
+      document.getElementById('modSchoberResult').style.display = 'block';
+      
+      let status, statusClass;
+      if (increase >= 6) {
+        status = '✓ Normal';
+        statusClass = 'status-normal';
+      } else {
+        status = '✗ Restricted';
+        statusClass = 'status-abnormal';
+      }
+      
+      document.getElementById('modSchoberStatus').innerHTML = 
+        `<span class="result-status ${statusClass}">${status}</span>`;
+      
+      testResults['modSchober'] = { value: '+' + increase, unit: 'cm', normal: '≥6 cm', status: status };
+      updateSummary();
+    }
+    
+    function calculateFTF() {
+      const dist = parseFloat(document.getElementById('ftfDistance').value);
+      if (dist === undefined || dist === '') return alert('Enter distance');
+      
+      document.getElementById('ftfValue').textContent = dist + ' cm';
+      document.getElementById('ftfResult').style.display = 'block';
+      
+      let status, statusClass;
+      if (dist <= 0) {
+        status = '✓ Excellent flexibility';
+        statusClass = 'status-normal';
+      } else if (dist <= 10) {
+        status = '✓ Normal flexibility';
+        statusClass = 'status-normal';
+      } else if (dist <= 20) {
+        status = '⚠ Mild tightness';
+        statusClass = 'status-warning';
+      } else {
+        status = '✗ Significant tightness';
+        statusClass = 'status-abnormal';
+      }
+      
+      document.getElementById('ftfStatus').innerHTML = 
+        `<span class="result-status ${statusClass}">${status}</span>`;
+      
+      testResults['ftf'] = { value: dist, unit: 'cm', normal: '0-10 cm', status: status };
+      updateSummary();
+    }
+    
+    // Thoracic Tests
+    function calculateChestExp() {
+      const exp = parseFloat(document.getElementById('chestExp').value);
+      const insp = parseFloat(document.getElementById('chestInsp').value);
+      if (!exp || !insp) return alert('Enter both measurements');
+      
+      const expansion = (insp - exp).toFixed(1);
+      document.getElementById('chestExpValue').textContent = expansion + ' cm';
+      document.getElementById('chestExpResult').style.display = 'block';
+      
+      let status, statusClass;
+      if (expansion >= 5) {
+        status = '✓ Normal chest expansion';
+        statusClass = 'status-normal';
+      } else if (expansion >= 2.5) {
+        status = '⚠ Reduced - possible AS';
+        statusClass = 'status-warning';
+      } else {
+        status = '✗ Significantly reduced';
+        statusClass = 'status-abnormal';
+      }
+      
+      document.getElementById('chestExpStatus').innerHTML = 
+        `<span class="result-status ${statusClass}">${status}</span>`;
+      
+      testResults['chestExp'] = { value: expansion, unit: 'cm', normal: '≥5 cm', status: status };
+      updateSummary();
+    }
+    
+    function calculateOtt() {
+      const init = parseFloat(document.getElementById('ottInit').value);
+      const flex = parseFloat(document.getElementById('ottFlex').value);
+      if (!flex) return alert('Enter flexion measurement');
+      
+      const increase = (flex - init).toFixed(1);
+      document.getElementById('ottValue').textContent = '+' + increase + ' cm';
+      document.getElementById('ottResult').style.display = 'block';
+      
+      let status, statusClass;
+      if (increase >= 2 && increase <= 4) {
+        status = '✓ Normal thoracic mobility';
+        statusClass = 'status-normal';
+      } else if (increase < 2) {
+        status = '⚠ Reduced thoracic flexion';
+        statusClass = 'status-warning';
+      } else {
+        status = '⚠ Hypermobile';
+        statusClass = 'status-warning';
+      }
+      
+      document.getElementById('ottStatus').innerHTML = 
+        `<span class="result-status ${statusClass}">${status}</span>`;
+      
+      testResults['ott'] = { value: '+' + increase, unit: 'cm', normal: '+2-4 cm', status: status };
+      updateSummary();
+    }
+    
+    // Cervical Tests
+    function calculateChinChest() {
+      const dist = parseFloat(document.getElementById('chinChest').value);
+      if (dist === undefined || dist === '') return alert('Enter distance');
+      
+      document.getElementById('chinChestValue').textContent = dist + ' cm';
+      document.getElementById('chinChestResult').style.display = 'block';
+      
+      let status, statusClass;
+      if (dist <= 0) {
+        status = '✓ Normal cervical flexion';
+        statusClass = 'status-normal';
+      } else if (dist <= 3) {
+        status = '⚠ Mild restriction';
+        statusClass = 'status-warning';
+      } else {
+        status = '✗ Significant restriction';
+        statusClass = 'status-abnormal';
+      }
+      
+      document.getElementById('chinChestStatus').innerHTML = 
+        `<span class="result-status ${statusClass}">${status}</span>`;
+      
+      testResults['chinChest'] = { value: dist, unit: 'cm', normal: '0 cm', status: status };
+      updateSummary();
+    }
+    
+    // IMU Functions
+    function initIMU() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && 
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS
+        document.body.addEventListener('click', requestIOSPermission, { once: true });
+      } else if ('DeviceOrientationEvent' in window) {
+        bindSensors();
+      }
+    }
+    
+    function requestIOSPermission() {
+      DeviceOrientationEvent.requestPermission()
+        .then(response => {
+          if (response === 'granted') {
+            bindSensors();
+          }
+        })
+        .catch(console.error);
+    }
+    
+    function bindSensors() {
+      window.addEventListener('deviceorientation', handleOrientation);
+      window.addEventListener('devicemotion', handleMotion);
+      sensorActive = true;
+      document.getElementById('sensorDot').classList.remove('inactive');
+      document.getElementById('sensorStatusText').textContent = 'Sensor Active';
+    }
+    
+    function handleOrientation(e) {
+      if (!sensorActive) return;
+      
+      const pitch = (e.beta || 0) - imuOffset.pitch;
+      const roll = (e.gamma || 0) - imuOffset.roll;
+      const yaw = (e.alpha || 0) - imuOffset.yaw;
+      
+      imuData.pitch = pitch;
+      imuData.roll = roll;
+      imuData.yaw = yaw;
+      
+      document.getElementById('imuPitch').textContent = pitch.toFixed(1) + '°';
+      document.getElementById('imuRoll').textContent = roll.toFixed(1) + '°';
+      document.getElementById('imuYaw').textContent = yaw.toFixed(1) + '°';
+      
+      if (isRecording) {
+        document.getElementById('digitalSchoberAngle').textContent = Math.abs(pitch).toFixed(1) + '°';
+        if (Math.abs(pitch) > maxPitch) {
+          maxPitch = Math.abs(pitch);
+          document.getElementById('digitalSchoberMax').textContent = maxPitch.toFixed(1) + '°';
+        }
+      }
+    }
+    
+    function handleMotion(e) {
+      if (!sensorActive) return;
+      
+      const acc = e.accelerationIncludingGravity || {};
+      imuData.accX = (acc.x || 0).toFixed(2);
+      imuData.accY = (acc.y || 0).toFixed(2);
+      imuData.accZ = (acc.z || 0).toFixed(2);
+      
+      document.getElementById('imuAccX').textContent = imuData.accX;
+      document.getElementById('imuAccY').textContent = imuData.accY;
+      document.getElementById('imuAccZ').textContent = imuData.accZ;
+    }
+    
+    function calibrateIMU() {
+      imuOffset.pitch = imuData.pitch + imuOffset.pitch;
+      imuOffset.roll = imuData.roll + imuOffset.roll;
+      imuOffset.yaw = imuData.yaw + imuOffset.yaw;
+      alert('Calibrated to zero!');
+    }
+    
+    function startDigitalSchober() {
+      isRecording = true;
+      maxPitch = 0;
+      document.getElementById('recIndicator').classList.add('active');
+    }
+    
+    function stopDigitalSchober() {
+      isRecording = false;
+      document.getElementById('recIndicator').classList.remove('active');
+      
+      testResults['digitalSchober'] = { 
+        value: maxPitch.toFixed(1), 
+        unit: '°', 
+        normal: '≥40°', 
+        status: maxPitch >= 40 ? '✓ Normal' : '⚠ Restricted' 
+      };
+      updateSummary();
+    }
+    
+    function startCervicalIMU() {
+      alert('Place phone on forehead, then move through each motion (flexion, extension, rotation L/R, lateral flexion L/R). Max angles will be recorded.');
+      // In a full implementation, this would track max angles for each movement
+    }
+    
+    // Special Tests Modal
+    const testInfo = {
+      adams: {
+        title: "Adam's Forward Bend Test",
+        procedure: "1. Patient stands facing away\n2. Bend forward from waist\n3. Examiner observes from behind\n4. Look for rib hump asymmetry",
+        positive: "Rib hump or asymmetric paravertebral prominence",
+        indicates: "Structural scoliosis"
+      },
+      slr: {
+        title: "Straight Leg Raise (SLR)",
+        procedure: "1. Patient supine\n2. Keep knee extended\n3. Passively raise leg\n4. Note angle of pain onset",
+        positive: "Pain radiating below knee at <70°",
+        indicates: "Sciatic nerve tension / disc herniation"
+      },
+      slump: {
+        title: "Slump Test",
+        procedure: "1. Patient sitting, hands behind back\n2. Slump trunk forward\n3. Flex neck (chin to chest)\n4. Extend knee\n5. Dorsiflex ankle",
+        positive: "Reproduction of radicular symptoms",
+        indicates: "Neural tension / adverse neurodynamics"
+      },
+      spurling: {
+        title: "Spurling's Test",
+        procedure: "1. Patient seated\n2. Extend, laterally flex, and rotate cervical spine\n3. Apply axial compression",
+        positive: "Radicular pain down arm",
+        indicates: "Cervical nerve root compression"
+      },
+      kemp: {
+        title: "Kemp's Test",
+        procedure: "1. Patient standing\n2. Extension + rotation + side flexion\n3. Apply overpressure",
+        positive: "Local lumbar pain",
+        indicates: "Facet joint dysfunction"
+      },
+      faber: {
+        title: "FABER / Patrick's Test",
+        procedure: "1. Patient supine\n2. Flexion, Abduction, External Rotation\n3. Heel on opposite knee\n4. Push knee down",
+        positive: "Groin pain (hip) or SI pain",
+        indicates: "Hip or SI joint pathology"
+      }
+    };
+    
+    function openTestModal(testId) {
+      const test = testInfo[testId];
+      document.getElementById('modalTitle').textContent = test.title;
+      document.getElementById('modalContent').innerHTML = `
+        <div class="instructions">
+          <div class="instructions-title">Procedure</div>
+          <div class="instructions-text">${test.procedure.replace(/\n/g, '<br>')}</div>
+        </div>
+        <div class="card" style="margin:12px 0;">
+          <b style="color:var(--red);">Positive Finding:</b><br>
+          <span style="color:var(--muted);font-size:12px;">${test.positive}</span>
+        </div>
+        <div class="card">
+          <b style="color:var(--accent);">Indicates:</b><br>
+          <span style="color:var(--muted);font-size:12px;">${test.indicates}</span>
+        </div>
+        <div style="margin-top:16px;">
+          <label class="input-label">Result</label>
+          <select class="input-field" id="testResult">
+            <option value="">Select</option>
+            <option value="negative">Negative (-)</option>
+            <option value="positive">Positive (+)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="saveTestResult('${testId}')">Save Result</button>
+      `;
+      document.getElementById('testModal').classList.add('active');
+    }
+    
+    function closeModal() {
+      document.getElementById('testModal').classList.remove('active');
+    }
+    
+    function saveTestResult(testId) {
+      const result = document.getElementById('testResult').value;
+      if (!result) return alert('Select a result');
+      
+      testResults[testId] = { 
+        value: result === 'positive' ? '+' : '-', 
+        unit: '', 
+        normal: '-', 
+        status: result === 'positive' ? 'Positive' : 'Negative' 
+      };
+      
+      const statusEl = document.getElementById(testId + 'Status');
+      if (statusEl) {
+        statusEl.textContent = result === 'positive' ? '✓' : '○';
+        statusEl.style.color = result === 'positive' ? 'var(--red)' : 'var(--green)';
+      }
+      
+      closeModal();
+      updateSummary();
+    }
+    
+    // Summary & Report
+    function updateSummary() {
+      const tbody = document.getElementById('summaryBody');
+      if (Object.keys(testResults).length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);">Complete tests to generate summary</td></tr>';
+        return;
+      }
+      
+      const testNames = {
+        spineLength: 'Spine Length',
+        sitStandRatio: 'Sit/Stand Ratio',
+        schober: "Schober's Test",
+        modSchober: 'Modified Schober',
+        ftf: 'Fingertip-to-Floor',
+        chestExp: 'Chest Expansion',
+        ott: "Ott's Sign",
+        chinChest: 'Chin-to-Chest',
+        digitalSchober: 'Digital Schober (IMU)',
+        adams: "Adam's Test",
+        slr: 'SLR Test',
+        slump: 'Slump Test',
+        spurling: "Spurling's Test",
+        kemp: "Kemp's Test",
+        faber: 'FABER Test'
+      };
+      
+      let html = '';
+      for (const [key, data] of Object.entries(testResults)) {
+        const statusColor = data.status.includes('✓') || data.status === 'Negative' ? 'var(--green)' : 
+                           data.status.includes('⚠') ? '#f59e0b' : 'var(--red)';
+        html += `<tr>
+          <td>${testNames[key] || key}</td>
+          <td>${data.value} ${data.unit}</td>
+          <td>${data.normal || '-'}</td>
+          <td style="color:${statusColor}">${data.status}</td>
+        </tr>`;
+      }
+      tbody.innerHTML = html;
+    }
+    
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      const patientName = document.getElementById('patientName').value || 'N/A';
+      const patientAge = document.getElementById('patientAge').value || 'N/A';
+      const examDate = document.getElementById('examDate').value || new Date().toISOString().split('T')[0];
+      const diagnosis = document.getElementById('diagnosis').value || 'N/A';
+      
+      // Header
+      doc.setFillColor(13, 27, 42);
+      doc.rect(0, 0, 210, 40, 'F');
+      doc.setTextColor(255, 215, 0);
+      doc.setFontSize(24);
+      doc.text('WBA99 SPINE BIOMECHANICS', 105, 20, { align: 'center' });
+      doc.setTextColor(0, 188, 212);
+      doc.setFontSize(12);
+      doc.text('Complete Assessment Report', 105, 30, { align: 'center' });
+      
+      // Patient Info
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(14);
+      doc.text('Patient Information', 14, 50);
+      doc.setFontSize(11);
+      doc.text(`Name: ${patientName}`, 14, 60);
+      doc.text(`Age: ${patientAge}`, 14, 67);
+      doc.text(`Date: ${examDate}`, 100, 60);
+      doc.text(`Diagnosis: ${diagnosis}`, 100, 67);
+      
+      // Results Table
+      doc.setFontSize(14);
+      doc.text('Test Results', 14, 85);
+      
+      let y = 95;
+      doc.setFillColor(0, 188, 212);
+      doc.rect(14, y - 6, 182, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.text('Test', 16, y);
+      doc.text('Value', 80, y);
+      doc.text('Normal', 120, y);
+      doc.text('Status', 160, y);
+      
+      y += 8;
+      doc.setTextColor(0, 0, 0);
+      
+      const testNames = {
+        spineLength: 'Spine Length',
+        sitStandRatio: 'Sit/Stand Ratio',
+        schober: "Schober's Test",
+        modSchober: 'Modified Schober',
+        ftf: 'Fingertip-to-Floor',
+        chestExp: 'Chest Expansion',
+        ott: "Ott's Sign",
+        chinChest: 'Chin-to-Chest',
+        digitalSchober: 'Digital Schober (IMU)',
+        adams: "Adam's Test",
+        slr: 'SLR Test',
+        slump: 'Slump Test',
+        spurling: "Spurling's Test",
+        kemp: "Kemp's Test",
+        faber: 'FABER Test'
+      };
+      
+      for (const [key, data] of Object.entries(testResults)) {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(testNames[key] || key, 16, y);
+        doc.text(`${data.value} ${data.unit}`, 80, y);
+        doc.text(data.normal || '-', 120, y);
+        doc.text(data.status.replace(/[✓✗⚠]/g, ''), 160, y);
+        y += 7;
+      }
+      
+      // Footer
+      y += 20;
+      if (y > 250) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Generated by WBA99 Spine Biomechanics Analysis System', 105, y, { align: 'center' });
+      doc.text('This report is for clinical reference only.', 105, y + 7, { align: 'center' });
+      
+      doc.save(`WBA99_Spine_${patientName.replace(/\s/g, '_')}_${examDate}.pdf`);
+    }
+    
+    function exportJSON() {
+      const data = {
+        patient: {
+          name: document.getElementById('patientName').value,
+          age: document.getElementById('patientAge').value,
+          gender: document.getElementById('patientGender').value,
+          height: document.getElementById('patientHeight').value,
+          weight: document.getElementById('patientWeight').value,
+          date: document.getElementById('examDate').value,
+          complaint: document.getElementById('complaint').value,
+          diagnosis: document.getElementById('diagnosis').value
+        },
+        results: testResults,
+        exportDate: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `WBA99_Spine_Data_${Date.now()}.json`;
+      a.click();
+    }
+    
+    function resetAll() {
+      if (confirm('Reset all data?')) {
+        testResults = {};
+        document.querySelectorAll('.input-field').forEach(el => {
+          if (el.type !== 'date') el.value = '';
+        });
+        document.querySelectorAll('.result-box').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.test-status').forEach(el => {
+          el.textContent = '○';
+          el.style.color = '';
+        });
+        updateSummary();
+      }
+    }
+  </script>
+</body>
+</html>

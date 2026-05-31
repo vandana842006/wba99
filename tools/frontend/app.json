@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "WBA99 MSK Analysis",
+    "slug": "wba99-msk-analysis",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "assetBundlePatterns": ["assets/**"],
+    "scheme": "wba99msk",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.wba99.mskapp",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Take photos for posture analysis",
+        "NSPhotoLibraryUsageDescription": "Upload patient images for assessment",
+        "NSMotionUsageDescription": "Measure joint angles with inclinometer"
+      }
+    },
+    "android": {
+      "package": "com.wba99.mskapp",
+      "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0A1628"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.HIGH_SAMPLING_RATE_SENSORS"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow WBA99 to access photos for posture analysis",
+          "cameraPermission": "Allow WBA99 to take photos for assessments"
+        }
+      ],
+      "expo-sensors",
+      "expo-audio",
+      "expo-video"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "wba99-msk-app-v2"
+      }
+    }
+  }
+}

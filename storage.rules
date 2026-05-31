@@ -1,0 +1,36 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function getOrgId() {
+      return request.auth.token.orgId;
+    }
+    
+    function belongsToOrg(orgId) {
+      return isSignedIn() && getOrgId() == orgId;
+    }
+
+    // Match org-scoped files
+    match /orgs/{orgId}/{allPaths=**} {
+      allow read, write: if belongsToOrg(orgId);
+    }
+
+    // Assessment thumbnails uploaded by the tool (gait, posture, etc.)
+    // Any authenticated user can write; read is open to authenticated users so
+    // PDF generation can fetch the images back via download URL.
+    match /assessments/{assessmentId}/{fileName} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Publicly accessible shared files (e.g. branding assets if any)
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.token.role == 'admin'; // Only global admins
+    }
+  }
+}

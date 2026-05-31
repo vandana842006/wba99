@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-background: #0B0F1A;
+  --color-surface: #161B2A;
+  --color-primary: #0EA5E9;
+  --color-primary-subtle: rgba(14, 165, 233, 0.15);
+  --color-secondary: #64748B;
+  --color-success: #10B981;
+  --color-error: #F43F5E;
+  --color-text: #F1F5F9;
+  --color-text-muted: #94A3B8;
+  --color-accent: #0EA5E9;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-input: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] {
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-primary: #0284C7;
+  --color-primary-subtle: rgba(2, 132, 199, 0.1);
+  --color-secondary: #64748B;
+  --color-success: #059669;
+  --color-error: #DC2626;
+  --color-text: #0F172A;
+  --color-text-muted: #475569;
+  --color-accent: #0EA5E9;
+  --color-border: rgba(15, 23, 42, 0.08);
+  --color-input: #F1F5F9;
+}
+
+.theme-transition-ready * {
+  transition: background-color 250ms ease, color 250ms ease, border-color 250ms ease,
+    box-shadow 250ms ease;
+}
+
+body {
+  font-family: "Inter", "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  min-height: 100vh;
+}
+
+select,
+select option {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+select option:checked {
+  background-color: color-mix(in srgb, var(--color-primary) 60%, #000 40%);
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+.glass-panel {
+  backdrop-filter: blur(24px) saturate(180%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+[data-theme="light"] .glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+.card-surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-surface:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes fadeInSoft {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInSoft 320ms ease both;
+}

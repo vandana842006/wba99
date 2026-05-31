@@ -1,0 +1,152 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getRole() {
+      return request.auth.token.role != null
+        ? request.auth.token.role
+        : (exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+            : null);
+    }
+
+    function isPhysio() {
+      return isSignedIn() && getRole() == "physio";
+    }
+
+    function isResearch() {
+      return isSignedIn() && getRole() == "research";
+    }
+
+    // isAdmin checks the JWT custom claim set by onUserUpdate when isAdmin field changes
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.isAdmin == true;
+    }
+
+    function isOwner() {
+      return isSignedIn() && request.auth.token.isOwner == true;
+    }
+
+    // ── users ──────────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isSignedIn() && (userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && userId == request.auth.uid;
+      allow update: if isSignedIn()
+        && userId == request.auth.uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["role"]);
+      allow delete: if false;
+    }
+
+    // ── patients ───────────────────────────────────────────────────────────────
+    match /patients/{patientId} {
+      // Single-document read: require explicit physio role check
+      allow get: if isPhysio()
+        && resource.data.physioId == request.auth.uid;
+      // Collection query: Firestore guarantees the where("physioId","==",uid)
+      // constraint is applied, so role is implied by physioId ownership.
+      // Using isSignedIn() avoids a recursive get() call inside a list context.
+      allow list: if isSignedIn()
+        && resource.data.physioId == request.auth.uid;
+      allow update, delete: if isPhysio()
+        && resource.data.physioId == request.auth.uid;
+      // isSignedIn() used (not isPhysio()) to avoid get() fallback failing when
+      // token claims aren't set — physioId == request.auth.uid ensures isolation.
+      allow create: if isSignedIn()
+        && request.resource.data.physioId == request.auth.uid;
+    }
+
+    // ── assessments ────────────────────────────────────────────────────────────
+    match /assessments/{assessmentId} {
+      allow get: if isPhysio()
+        && resource.data.physioId == request.auth.uid;
+      allow list: if isSignedIn()
+        && resource.data.physioId == request.auth.uid;
+      allow update, delete: if isPhysio()
+        && resource.data.physioId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.physioId == request.auth.uid;
+      // Research: NO direct client-side access (use getAnonymizedAssessments callable)
+
+      // Thumbnails subcollection — base64 images stored here to avoid Storage CORS
+      match /thumbnails/{thumbId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+
+    // ── reports ────────────────────────────────────────────────────────────────
+    match /reports/{reportId} {
+      allow get: if isPhysio()
+        && resource.data.physioId == request.auth.uid;
+      allow list: if isSignedIn()
+        && resource.data.physioId == request.auth.uid;
+      allow update, delete: if isPhysio()
+        && resource.data.physioId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.physioId == request.auth.uid;
+    }
+
+    // ── organizations ──────────────────────────────────────────────────────────
+    match /organizations/{orgId} {
+      allow read: if isResearch()
+        && resource.data.adminUid == request.auth.uid;
+      allow create: if isResearch()
+        && request.resource.data.adminUid == request.auth.uid;
+      allow update: if isResearch()
+        && resource.data.adminUid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // ── publications ───────────────────────────────────────────────────────────
+    match /publications/{pubId} {
+      allow get: if isResearch()
+        && resource.data.orgId == request.auth.token.orgId;
+      allow list: if isResearch()
+        && request.auth.token.orgId != null
+        && request.auth.token.orgId == resource.data.orgId;
+      allow create: if isResearch()
+        && request.resource.data.orgId == request.auth.token.orgId;
+      allow update: if isResearch()
+        && resource.data.orgId == request.auth.token.orgId;
+      allow delete: if isResearch()
+        && resource.data.orgId == request.auth.token.orgId;
+    }
+
+    // ── Legacy collections (Admin SDK only) ───────────────────────────────────
+    match /orgs/{orgId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /profiles/{profileId} {
+      allow read, write: if false;
+    }
+
+    match /invites/{inviteId} {
+      allow read: if isSignedIn()
+        && request.auth.token.email == resource.data.email;
+      allow write: if false;
+    }
+
+    match /auditLogs/{logId} {
+      allow read, write: if false;
+    }
+
+    match /adminAuditLogs/{logId} {
+      allow read: if isAdmin() || isOwner();
+      allow write: if false;
+    }
+
+    match /dashboard_groupStats/{groupId} {
+      allow read, write: if false;
+    }
+
+    // ── Catch-all: deny everything else ──────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,96 @@
+{
+    "indexes": [
+        {
+            "collectionGroup": "assessments",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "orgId", "order": "ASCENDING" },
+                { "fieldPath": "createdAt", "order": "DESCENDING" },
+                { "fieldPath": "__name__", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "assessments",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "physioId", "order": "ASCENDING" },
+                { "fieldPath": "createdAt", "order": "DESCENDING" },
+                { "fieldPath": "__name__", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "athleteHealthLogs",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "athleteId", "order": "ASCENDING" },
+                { "fieldPath": "createdAt", "order": "DESCENDING" },
+                { "fieldPath": "__name__", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "patients",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "physioId", "order": "ASCENDING" },
+                { "fieldPath": "createdAt", "order": "DESCENDING" },
+                { "fieldPath": "__name__", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "profiles",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "orgId", "order": "ASCENDING" },
+                { "fieldPath": "assignedClinicianIds", "arrayConfig": "CONTAINS" },
+                { "fieldPath": "fullName", "order": "ASCENDING" },
+                { "fieldPath": "__name__", "order": "ASCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "publications",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "orgId", "order": "ASCENDING" },
+                { "fieldPath": "createdAt", "order": "DESCENDING" },
+                { "fieldPath": "__name__", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "reports",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "physioId", "order": "ASCENDING" },
+                { "fieldPath": "createdAt", "order": "DESCENDING" },
+                { "fieldPath": "__name__", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "sessions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "assignedAthleteIds", "arrayConfig": "CONTAINS" },
+                { "fieldPath": "createdAt", "order": "DESCENDING" },
+                { "fieldPath": "__name__", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "sessions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "athleteId", "order": "ASCENDING" },
+                { "fieldPath": "createdAt", "order": "DESCENDING" },
+                { "fieldPath": "__name__", "order": "DESCENDING" }
+            ]
+        },
+        {
+            "collectionGroup": "sessions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "createdBy", "order": "ASCENDING" },
+                { "fieldPath": "createdAt", "order": "DESCENDING" },
+                { "fieldPath": "__name__", "order": "DESCENDING" }
+            ]
+        }
+    ],
+    "fieldOverrides": []
+}

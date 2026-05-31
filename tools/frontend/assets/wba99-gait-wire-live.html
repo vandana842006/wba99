@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WBA99 Live Gait Analysis</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0A0E1A; color: #E0E6ED; font-family: 'Courier New', monospace; overflow: hidden; width: 100vw; height: 100vh; }
+
+  #container { position: relative; width: 100%; height: 100%; }
+
+  #video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+
+  #canvas {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    transform: scaleX(-1);
+  }
+
+  /* bg-opacity overlay */
+  #bg-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: #0A0E1A;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  /* Top info bar */
+  #topbar {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(10,14,26,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 20;
+  }
+  #topbar .brand { font-size: 11px; color: #00F0FF; font-weight: bold; letter-spacing: 2px; }
+  #topbar .status { font-size: 10px; color: #00FF88; display: flex; align-items: center; gap: 4px; }
+  #topbar .dot { width: 6px; height: 6px; border-radius: 50%; background: #00FF88; animation: pulse 1s infinite; }
+  #topbar .fps { font-size: 10px; color: #6B7B8A; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Pose count badge */
+  #pose-count {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,240,255,0.15);
+    border: 1px solid rgba(0,240,255,0.4);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 10px; color: #00F0FF;
+    pointer-events: none;
+    z-index: 15;
+    display: none;
+  }
+
+  /* Body/Face/Both tabs */
+  #body-tabs {
+    position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 2px; z-index: 20;
+    background: rgba(10,14,26,0.8); border-radius: 20px; padding: 3px;
+    border: 1px solid rgba(0,240,255,0.2);
+  }
+  .body-tab {
+    padding: 5px 14px; border-radius: 16px;
+    font-size: 11px; font-weight: bold; cursor: pointer;
+    color: #6B7B8A; transition: all 0.2s;
+    border: none; background: transparent;
+  }
+  .body-tab.active { background: rgba(0,240,255,0.2); color: #00F0FF; }
+
+  /* Viz mode tabs */
+  #viz-tabs {
+    position: absolute; bottom: 88px; left: 0; right: 0;
+    display: flex; gap: 2px; justify-content: center;
+    z-index: 20; padding: 0 8px;
+  }
+  .viz-tab {
+    flex: 1; max-width: 60px; padding: 5px 4px; text-align: center;
+    font-size: 9px; font-weight: bold; cursor: pointer;
+    background: rgba(10,14,26,0.8); color: #6B7B8A;
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;
+    transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .viz-tab svg { width: 14px; height: 14px; }
+  .viz-tab.active { background: rgba(0,240,255,0.15); color: #00F0FF; border-color: #00F0FF; }
+  .viz-tab.active-pink { background: rgba(255,0,255,0.15); color: #FF00FF; border-color: #FF00FF; }
+  .viz-tab.active-green { background: rgba(0,255,136,0.15); color: #00FF88; border-color: #00FF88; }
+  .viz-tab.active-orange { background: rgba(255,107,0,0.15); color: #FF6B00; border-color: #FF6B00; }
+  .viz-tab.active-purple { background: rgba(139,92,246,0.15); color: #8B5CF6; border-color: #8B5CF6; }
+  .viz-tab.active-gray { background: rgba(255,255,255,0.08); color: #aaa; border-color: #aaa; }
+
+  /* Settings panel */
+  #settings-panel {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(13,21,32,0.95);
+    border-top: 1px solid rgba(0,240,255,0.2);
+    z-index: 20; padding: 10px 16px 16px;
+  }
+  #settings-header {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: #6B7B8A; letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .setting-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .setting-label { font-size: 10px; color: #6B7B8A; width: 36px; }
+  .setting-value { font-size: 10px; color: #E0E6ED; width: 28px; text-align: right; }
+  input[type=range] {
+    flex: 1; height: 4px; appearance: none;
+    background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: #00F0FF; cursor: pointer;
+  }
+  .color-swatches { display: flex; gap: 6px; margin-top: 4px; }
+  .swatch {
+    width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: border 0.2s;
+  }
+  .swatch.active { border-color: #fff; }
+
+  /* Loading state */
+  #loading {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: #0A0E1A; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 50; gap: 16px;
+  }
+  #loading .spinner {
+    width: 48px; height: 48px; border: 3px solid rgba(0,240,255,0.2);
+    border-top-color: #00F0FF; border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading p { font-size: 12px; color: #00F0FF; letter-spacing: 2px; }
+  #loading small { font-size: 10px; color: #6B7B8A; }
+
+  /* Camera permission error */
+  #cam-error {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center; z-index: 50; padding: 20px; display: none;
+  }
+  #cam-error p { color: #FF4444; font-size: 13px; margin-bottom: 8px; }
+  #cam-error small { color: #6B7B8A; font-size: 10px; }
+</style>
+</head>
+<body>
+<div id="container">
+  <!-- Raw camera feed -->
+  <video id="video" autoplay playsinline muted></video>
+
+  <!-- BG opacity overlay -->
+  <div id="bg-overlay" style="opacity:0.1"></div>
+
+  <!-- Canvas for skeleton + angles -->
+  <canvas id="canvas"></canvas>
+
+  <!-- Pose count badge -->
+  <div id="pose-count">6 Poses</div>
+
+  <!-- Top status bar -->
+  <div id="topbar">
+    <span class="brand">WBA99 GAIT</span>
+    <span class="status"><span class="dot"></span><span id="status-text">LOADING...</span></span>
+    <span class="fps" id="fps-counter">-- fps</span>
+  </div>
+
+  <!-- Body/Face/Both tabs -->
+  <div id="body-tabs">
+    <button class="body-tab" id="tab-face" onclick="setBodyMode('face')">Face</button>
+    <button class="body-tab active" id="tab-body" onclick="setBodyMode('body')">Body</button>
+    <button class="body-tab" id="tab-both" onclick="setBodyMode('both')">Both</button>
+  </div>
+
+  <!-- Viz mode tabs -->
+  <div id="viz-tabs">
+    <button class="viz-tab" id="viz-particles" onclick="setVizMode('particles')">
+      <svg viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="7" r="2"/><circle cx="3" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="3" cy="11" r="1.5"/><circle cx="11" cy="11" r="1.5"/></svg>
+      Particles
+    </button>
+    <button class="viz-tab" id="viz-bone" onclick="setVizMode('bone')">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="2" y1="12" x2="12" y2="2"/><circle cx="2" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="2" r="2" fill="currentColor" stroke="none"/></svg>
+      Bone+ROM
+    </button>
+    <button class="viz-tab active" id="viz-wire" onclick="setVizMode('wire')">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="7" y1="1" x2="7" y2="4"/><line x1="7" y1="4" x2="4" y2="8"/><line x1="7" y1="4" x2="10" y2="8"/><line x1="4" y1="8" x2="3" y2="13"/><line x1="10" y1="8" x2="11" y2="13"/><circle cx="7" cy="2" r="1" fill="currentColor"/></svg>
+      Wire
+    </button>
+    <button class="viz-tab" id="viz-neon" onclick="setVizMode('neon')">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 L7 3 L11 11" stroke-linecap="round" stroke-linejoin="round"/><line x1="5" y1="8" x2="9" y2="8"/></svg>
+      Neon
+    </button>
+    <button class="viz-tab" id="viz-matrix" onclick="setVizMode('matrix')">
+      <svg viewBox="0 0 14 14" fill="currentColor"><rect x="1" y="1" width="3" height="3" rx="0.5"/><rect x="5.5" y="1" width="3" height="3" rx="0.5"/><rect x="10" y="1" width="3" height="3" rx="0.5"/><rect x="1" y="5.5" width="3" height="3" rx="0.5"/><rect x="5.5" y="5.5" width="3" height="3" rx="0.5"/><rect x="10" y="5.5" width="3" height="3" rx="0.5"/></svg>
+      Matrix
+    </button>
+    <button class="viz-tab" id="viz-ghost" onclick="setVizMode('ghost')">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13 L3 5 Q3 1 7 1 Q11 1 11 5 L11 13 L9 11.5 L7 13 L5 11.5 Z" stroke-linejoin="round"/></svg>
+      Ghost
+    </button>
+  </div>
+
+  <!-- Settings panel -->
+  <div id="settings-panel">
+    <div id="settings-header">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a3 3 0 100-6 3 3 0 000 6zm8.94-2a1 1 0 000-2h-1.1a8 8 0 00-.57-2.17l.95-.55a1 1 0 00-1-1.73l-.95.55a8 8 0 00-1.6-1.6l.55-.95a1 1 0 00-1.73-1l-.55.95a8 8 0 00-2.17-.57V3a1 1 0 00-2 0v1.1a8 8 0 00-2.17.57l-.55-.95a1 1 0 00-1.73 1l.55.95a8 8 0 00-1.6 1.6l-.95-.55a1 1 0 00-1 1.73l.95.55A8 8 0 003.1 10H2a1 1 0 000 2h1.1a8 8 0 00.57 2.17l-.95.55a1 1 0 001 1.73l.95-.55a8 8 0 001.6 1.6l-.55.95a1 1 0 001.73 1l.55-.95a8 8 0 002.17.57V22a1 1 0 002 0v-1.1a8 8 0 002.17-.57l.55.95a1 1 0 001.73-1l-.55-.95a8 8 0 001.6-1.6l.95.55a1 1 0 001-1.73l-.95-.55A8 8 0 0020.9 14h1.04z"/></svg>
+      SETTINGS
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Size</span>
+      <input type="range" id="size-slider" min="1" max="6" step="0.5" value="3" oninput="updateSetting('size',this.value)">
+      <span class="setting-value" id="size-val">3</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Glow</span>
+      <input type="range" id="glow-slider" min="0" max="30" step="1" value="15" oninput="updateSetting('glow',this.value)">
+      <span class="setting-value" id="glow-val">15</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">BG</span>
+      <input type="range" id="bg-slider" min="0" max="100" step="5" value="10" oninput="updateSetting('bg',this.value)">
+      <span class="setting-value" id="bg-val">10%</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Color</span>
+      <div class="color-swatches">
+        <div class="swatch active" style="background:#00F0FF" onclick="setColor('#00F0FF','#FF00A8','#00FF88')"></div>
+        <div class="swatch" style="background:#FF00FF" onclick="setColor('#FF00FF','#00F0FF','#FF6B00')"></div>
+        <div class="swatch" style="background:#00FF88" onclick="setColor('#00FF88','#00F0FF','#FFD700')"></div>
+        <div class="swatch" style="background:#FFD700" onclick="setColor('#FFD700','#FF6B00','#fff')"></div>
+        <div class="swatch" style="background:#8B5CF6" onclick="setColor('#8B5CF6','#FF00FF','#00F0FF')"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>INITIALIZING POSE AI</p>
+    <small>Loading MoveNet model...</small>
+  </div>
+
+  <!-- Camera error -->
+  <div id="cam-error">
+    <p>Camera access denied</p>
+    <small>Please allow camera permissions and reload</small>
+  </div>
+</div>
+
+<!-- TensorFlow.js + MoveNet via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js"></script>
+
+<script>
+// ─── State ─────────────────────────────────────────────────────────────────
+let detector = null;
+let animId = null;
+let lastFpsTime = Date.now();
+let frameCount = 0;
+let currentFps = 0;
+
+let vizMode = 'wire';       // particles | bone | wire | neon | matrix | ghost
+let bodyMode = 'body';      // face | body | both
+let skeletonColor = '#00F0FF';
+let jointColor = '#FF00A8';
+let angleColor = '#00FF88';
+let strokeSize = 3;
+let glowAmount = 15;
+
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// ─── MoveNet keypoint indices ───────────────────────────────────────────────
+const KP = {
+  nose:0, l_eye:1, r_eye:2, l_ear:3, r_ear:4,
+  l_shoulder:5, r_shoulder:6, l_elbow:7, r_elbow:8,
+  l_wrist:9, r_wrist:10, l_hip:11, r_hip:12,
+  l_knee:13, r_knee:14, l_ankle:15, r_ankle:16
+};
+
+// Skeleton connections [from, to]
+const CONNECTIONS = [
+  [KP.l_ear,KP.l_eye],[KP.r_ear,KP.r_eye],[KP.l_eye,KP.nose],[KP.r_eye,KP.nose],
+  [KP.l_shoulder,KP.r_shoulder],
+  [KP.l_shoulder,KP.l_elbow],[KP.l_elbow,KP.l_wrist],
+  [KP.r_shoulder,KP.r_elbow],[KP.r_elbow,KP.r_wrist],
+  [KP.l_shoulder,KP.l_hip],[KP.r_shoulder,KP.r_hip],
+  [KP.l_hip,KP.r_hip],
+  [KP.l_hip,KP.l_knee],[KP.l_knee,KP.l_ankle],
+  [KP.r_hip,KP.r_knee],[KP.r_knee,KP.r_ankle],
+];
+
+const BODY_CONNECTIONS = [
+  [KP.l_shoulder,KP.r_shoulder],
+  [KP.l_shoulder,KP.l_elbow],[KP.l_elbow,KP.l_wrist],
+  [KP.r_shoulder,KP.r_elbow],[KP.r_elbow,KP.r_wrist],
+  [KP.l_shoulder,KP.l_hip],[KP.r_shoulder,KP.r_hip],
+  [KP.l_hip,KP.r_hip],
+  [KP.l_hip,KP.l_knee],[KP.l_knee,KP.l_ankle],
+  [KP.r_hip,KP.r_knee],[KP.r_knee,KP.r_ankle],
+];
+
+const FACE_CONNECTIONS = [
+  [KP.l_ear,KP.l_eye],[KP.r_ear,KP.r_eye],[KP.l_eye,KP.nose],[KP.r_eye,KP.nose],
+];
+
+// ─── Angle computation ─────────────────────────────────────────────────────
+function angleBetween(a, b, c) {
+  // angle at point b between a-b-c
+  const ab = { x: a.x - b.x, y: a.y - b.y };
+  const cb = { x: c.x - b.x, y: c.y - b.y };
+  const dot = ab.x * cb.x + ab.y * cb.y;
+  const magAb = Math.sqrt(ab.x**2 + ab.y**2);
+  const magCb = Math.sqrt(cb.x**2 + cb.y**2);
+  if (magAb === 0 || magCb === 0) return 0;
+  const cosA = Math.min(1, Math.max(-1, dot / (magAb * magCb)));
+  return Math.round(Math.acos(cosA) * (180 / Math.PI));
+}
+
+// Gait-relevant angles to display (lateral view, right side preferred)
+function computeGaitAngles(kps) {
+  const get = (i) => kps[i] && kps[i].score > 0.25 ? kps[i] : null;
+  const angles = [];
+
+  const nose      = get(KP.nose);
+  const lShoulder = get(KP.l_shoulder);
+  const rShoulder = get(KP.r_shoulder);
+  const lElbow    = get(KP.l_elbow);
+  const rElbow    = get(KP.r_elbow);
+  const lHip      = get(KP.l_hip);
+  const rHip      = get(KP.r_hip);
+  const lKnee     = get(KP.l_knee);
+  const rKnee     = get(KP.r_knee);
+  const lAnkle    = get(KP.l_ankle);
+  const rAnkle    = get(KP.r_ankle);
+
+  // 1. Neck/head tilt — angle at shoulder between ear and spine
+  const lEar = get(KP.l_ear);
+  if (lEar && lShoulder && lHip) {
+    const a = angleBetween(lEar, lShoulder, lHip);
+    angles.push({ label: a+'°', x: lShoulder.x, y: lShoulder.y - 20, color: '#00F0FF' });
+  } else if (nose && rShoulder && rHip) {
+    const a = angleBetween(nose, rShoulder, rHip);
+    angles.push({ label: a+'°', x: rShoulder.x, y: rShoulder.y - 20, color: '#00F0FF' });
+  }
+
+  // 2. Shoulder angle (trunk-shoulder-elbow)
+  const shoulder = lShoulder || rShoulder;
+  const hip = lHip || rHip;
+  const elbow = (lShoulder && lElbow) ? lElbow : rElbow;
+  if (shoulder && hip && elbow) {
+    const refAbove = { x: shoulder.x, y: shoulder.y - 50 };
+    const a = angleBetween(hip, shoulder, elbow);
+    angles.push({ label: a+'°', x: shoulder.x + 18, y: shoulder.y + 10, color: '#FFD700' });
+  }
+
+  // 3. Hip angle (shoulder-hip-knee)
+  const hipPt = lHip || rHip;
+  const kneePt = lKnee || rKnee;
+  const shoulderPt = lShoulder || rShoulder;
+  if (shoulderPt && hipPt && kneePt) {
+    const a = angleBetween(shoulderPt, hipPt, kneePt);
+    angles.push({ label: a+'°', x: hipPt.x + 18, y: hipPt.y, color: '#FF6B00' });
+  }
+
+  // 4. Knee angle (hip-knee-ankle)
+  const kL = lKnee, kR = rKnee;
+  const hL = lHip, hR = rHip;
+  const aL = lAnkle, aR = rAnkle;
+  if (hL && kL && aL) {
+    const a = angleBetween(hL, kL, aL);
+    angles.push({ label: a+'°', x: kL.x + 18, y: kL.y, color: '#00FF88' });
+  } else if (hR && kR && aR) {
+    const a = angleBetween(hR, kR, aR);
+    angles.push({ label: a+'°', x: kR.x + 18, y: kR.y, color: '#00FF88' });
+  }
+
+  // 5. Ankle angle (knee-ankle-toe approximate using heel projection)
+  if (lKnee && lAnkle) {
+    const toeSim = { x: lAnkle.x + (lAnkle.x - lKnee.x) * 0.3, y: lAnkle.y + 30, score: 1 };
+    const a = angleBetween(lKnee, lAnkle, toeSim);
+    angles.push({ label: a+'°', x: lAnkle.x + 18, y: lAnkle.y, color: '#FF00FF' });
+  } else if (rKnee && rAnkle) {
+    const toeSim = { x: rAnkle.x + (rAnkle.x - rKnee.x) * 0.3, y: rAnkle.y + 30, score: 1 };
+    const a = angleBetween(rKnee, rAnkle, toeSim);
+    angles.push({ label: a+'°', x: rAnkle.x + 18, y: rAnkle.y, color: '#FF00FF' });
+  }
+
+  return angles;
+}
+
+// ─── Drawing helpers ────────────────────────────────────────────────────────
+function setGlow(color, radius) {
+  if (radius > 0) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = radius;
+  } else {
+    ctx.shadowBlur = 0;
+  }
+}
+
+function clearGlow() { ctx.shadowBlur = 0; }
+
+function drawLine(x1, y1, x2, y2, color, width) {
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+}
+
+function drawCircle(x, y, r, fill, stroke, strokeW) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  if (stroke && strokeW > 0) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = strokeW;
+    ctx.stroke();
+  }
+}
+
+function drawAngleBadge(label, x, y, textColor) {
+  const pad = 4;
+  ctx.font = `bold ${10 + strokeSize * 0.5}px 'Courier New', monospace`;
+  const tw = ctx.measureText(label).width;
+  const bw = tw + pad * 2;
+  const bh = 16;
+
+  // Badge background (rounded rect polyfill)
+  const bx = x - 2, by = y - bh / 2 - 2, br = bw + 4, bt = bh + 4, rad = 4;
+  ctx.fillStyle = 'rgba(10,14,26,0.75)';
+  ctx.beginPath();
+  ctx.moveTo(bx + rad, by);
+  ctx.lineTo(bx + br - rad, by);
+  ctx.arcTo(bx + br, by, bx + br, by + rad, rad);
+  ctx.lineTo(bx + br, by + bt - rad);
+  ctx.arcTo(bx + br, by + bt, bx + br - rad, by + bt, rad);
+  ctx.lineTo(bx + rad, by + bt);
+  ctx.arcTo(bx, by + bt, bx, by + bt - rad, rad);
+  ctx.lineTo(bx, by + rad);
+  ctx.arcTo(bx, by, bx + rad, by, rad);
+  ctx.closePath();
+  ctx.fill();
+
+  // Badge text
+  ctx.fillStyle = textColor;
+  ctx.fillText(label, x + pad - 2, y + bh / 2 - 5);
+}
+
+// ─── Render per viz mode ────────────────────────────────────────────────────
+function renderPose(kps) {
+  const W = canvas.width, H = canvas.height;
+  const getKp = (i) => {
+    const k = kps[i];
+    if (!k || k.score < 0.25) return null;
+    return { x: k.x * W / video.videoWidth, y: k.y * H / video.videoHeight };
+  };
+
+  const activeConns = bodyMode === 'face'
+    ? FACE_CONNECTIONS
+    : bodyMode === 'body'
+    ? BODY_CONNECTIONS
+    : CONNECTIONS;
+
+  // Compute angles
+  const scaledKps = kps.map(k => k ? {
+    x: k.x * W / video.videoWidth,
+    y: k.y * H / video.videoHeight,
+    score: k.score
+  } : null);
+  const angles = computeGaitAngles(scaledKps);
+
+  if (vizMode === 'wire') {
+    setGlow(skeletonColor, glowAmount * 0.4);
+    // Draw connections
+    activeConns.forEach(([a, b]) => {
+      const p1 = getKp(a), p2 = getKp(b);
+      if (!p1 || !p2) return;
+      drawLine(p1.x, p1.y, p2.x, p2.y, skeletonColor, strokeSize);
+    });
+    clearGlow();
+    // Draw joints
+    kps.forEach((k, i) => {
+      if (!k || k.score < 0.3) return;
+      // Only show relevant joints per body mode
+      if (bodyMode === 'face' && i > 4) return;
+      if (bodyMode === 'body' && i < 5) return;
+      const x = k.x * W / video.videoWidth;
+      const y = k.y * H / video.videoHeight;
+      setGlow(jointColor, glowAmount * 0.5);
+      drawCircle(x, y, strokeSize + 2, jointColor, '#fff', 1);
+      clearGlow();
+    });
+
+  } else if (vizMode === 'neon') {
+    // Double-pass for bloom effect
+    setGlow(skeletonColor, glowAmount);
+    ctx.globalAlpha = 0.5;
+    activeConns.forEach(([a, b]) => {
+      const p1 = getKp(a), p2 = getKp(b);
+      if (!p1 || !p2) return;
+      drawLine(p1.x, p1.y, p2.x, p2.y, skeletonColor, strokeSize * 3);
+    });
+    ctx.globalAlpha = 1;
+    activeConns.forEach(([a, b]) => {
+      const p1 = getKp(a), p2 = getKp(b);
+      if (!p1 || !p2) return;
+      drawLine(p1.x, p1.y, p2.x, p2.y, '#fff', strokeSize * 0.6);
+    });
+    clearGlow();
+    kps.forEach((k, i) => {
+      if (!k || k.score < 0.3) return;
+      if (bodyMode === 'face' && i > 4) return;
+      if (bodyMode === 'body' && i < 5) return;
+      const x = k.x * W / video.videoWidth;
+      const y = k.y * H / video.videoHeight;
+      setGlow(jointColor, glowAmount);
+      drawCircle(x, y, strokeSize + 3, jointColor, '#fff', 1.5);
+      clearGlow();
+    });
+
+  } else if (vizMode === 'particles') {
+    const t = Date.now() / 1000;
+    kps.forEach((k, i) => {
+      if (!k || k.score < 0.3) return;
+      if (bodyMode === 'face' && i > 4) return;
+      if (bodyMode === 'body' && i < 5) return;
+      const x = k.x * W / video.videoWidth;
+      const y = k.y * H / video.videoHeight;
+      for (let p = 0; p < 3; p++) {
+        const angle = (t * 2 + p * 2.094) % (Math.PI * 2);
+        const r = strokeSize * 2.5 + Math.sin(t * 3 + i) * strokeSize;
+        const px = x + Math.cos(angle) * r;
+        const py = y + Math.sin(angle) * r;
+        setGlow(skeletonColor, glowAmount * 0.3);
+        drawCircle(px, py, strokeSize * 0.7, skeletonColor, '', 0);
+        clearGlow();
+      }
+      drawCircle(x, y, strokeSize + 1, jointColor, '#fff', 1);
+    });
+    // Faint connections
+    ctx.globalAlpha = 0.3;
+    setGlow(skeletonColor, glowAmount * 0.2);
+    activeConns.forEach(([a, b]) => {
+      const p1 = getKp(a), p2 = getKp(b);
+      if (!p1 || !p2) return;
+      drawLine(p1.x, p1.y, p2.x, p2.y, skeletonColor, strokeSize * 0.6);
+    });
+    ctx.globalAlpha = 1;
+    clearGlow();
+
+  } else if (vizMode === 'bone') {
+    // Thick bone segments with ROM arcs
+    activeConns.forEach(([a, b]) => {
+      const p1 = getKp(a), p2 = getKp(b);
+      if (!p1 || !p2) return;
+      // Outer thick line
+      drawLine(p1.x, p1.y, p2.x, p2.y, 'rgba(255,255,255,0.15)', strokeSize * 3);
+      // Inner colored line
+      setGlow(skeletonColor, glowAmount * 0.3);
+      drawLine(p1.x, p1.y, p2.x, p2.y, skeletonColor, strokeSize);
+      clearGlow();
+    });
+    kps.forEach((k, i) => {
+      if (!k || k.score < 0.3) return;
+      if (bodyMode === 'face' && i > 4) return;
+      if (bodyMode === 'body' && i < 5) return;
+      const x = k.x * W / video.videoWidth;
+      const y = k.y * H / video.videoHeight;
+      drawCircle(x, y, strokeSize + 4, 'rgba(255,255,255,0.1)', skeletonColor, 2);
+      drawCircle(x, y, strokeSize + 1, jointColor, '', 0);
+    });
+
+  } else if (vizMode === 'matrix') {
+    // Green matrix dots style
+    const matColor = '#00FF00';
+    setGlow(matColor, glowAmount * 0.4);
+    activeConns.forEach(([a, b]) => {
+      const p1 = getKp(a), p2 = getKp(b);
+      if (!p1 || !p2) return;
+      // Dotted line
+      const dx = p2.x - p1.x, dy = p2.y - p1.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const dots = Math.floor(dist / 8);
+      for (let d = 0; d <= dots; d++) {
+        const t = d / Math.max(dots, 1);
+        drawCircle(p1.x + dx * t, p1.y + dy * t, 1.5, matColor, '', 0);
+      }
+    });
+    kps.forEach((k, i) => {
+      if (!k || k.score < 0.3) return;
+      if (bodyMode === 'face' && i > 4) return;
+      if (bodyMode === 'body' && i < 5) return;
+      const x = k.x * W / video.videoWidth;
+      const y = k.y * H / video.videoHeight;
+      drawCircle(x, y, strokeSize + 1, matColor, '', 0);
+    });
+    clearGlow();
+
+  } else if (vizMode === 'ghost') {
+    // Translucent pastel ghost skeleton
+    ctx.globalAlpha = 0.55;
+    activeConns.forEach(([a, b]) => {
+      const p1 = getKp(a), p2 = getKp(b);
+      if (!p1 || !p2) return;
+      drawLine(p1.x, p1.y, p2.x, p2.y, '#C9F0FF', strokeSize);
+    });
+    kps.forEach((k, i) => {
+      if (!k || k.score < 0.3) return;
+      if (bodyMode === 'face' && i > 4) return;
+      if (bodyMode === 'body' && i < 5) return;
+      const x = k.x * W / video.videoWidth;
+      const y = k.y * H / video.videoHeight;
+      drawCircle(x, y, strokeSize + 3, 'rgba(200,240,255,0.4)', '#C9F0FF', 1);
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  // ── Angle labels ────────────────────────────────────────────────────────
+  angles.forEach(({ label, x, y, color }) => {
+    setGlow(color, glowAmount * 0.3);
+    drawAngleBadge(label, x, y, color);
+    clearGlow();
+  });
+}
+
+// ─── Main detection loop ────────────────────────────────────────────────────
+async function detect() {
+  if (!detector || video.readyState < 2) {
+    animId = requestAnimationFrame(detect);
+    return;
+  }
+
+  // Sync canvas size to video
+  if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+  }
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  try {
+    const poses = await detector.estimatePoses(video);
+
+    // FPS counter
+    frameCount++;
+    const now = Date.now();
+    if (now - lastFpsTime > 1000) {
+      currentFps = Math.round(frameCount * 1000 / (now - lastFpsTime));
+      frameCount = 0;
+      lastFpsTime = now;
+      document.getElementById('fps-counter').textContent = currentFps + ' fps';
+    }
+
+    if (poses.length > 0) {
+      document.getElementById('status-text').textContent = 'LIVE';
+      document.getElementById('pose-count').style.display = 'block';
+      document.getElementById('pose-count').textContent = poses.length + (poses.length === 1 ? ' Pose' : ' Poses');
+      renderPose(poses[0].keypoints);
+    } else {
+      document.getElementById('status-text').textContent = 'SEARCHING';
+      document.getElementById('pose-count').style.display = 'none';
+    }
+  } catch (e) {
+    // Silently skip frame errors
+  }
+
+  animId = requestAnimationFrame(detect);
+}
+
+// ─── Settings callbacks ─────────────────────────────────────────────────────
+function updateSetting(type, val) {
+  if (type === 'size') {
+    strokeSize = parseFloat(val);
+    document.getElementById('size-val').textContent = val;
+  } else if (type === 'glow') {
+    glowAmount = parseFloat(val);
+    document.getElementById('glow-val').textContent = val;
+  } else if (type === 'bg') {
+    document.getElementById('bg-val').textContent = val + '%';
+    document.getElementById('bg-overlay').style.opacity = parseFloat(val) / 100;
+  }
+}
+
+function setColor(skeleton, joint, angle) {
+  skeletonColor = skeleton;
+  jointColor = joint;
+  angleColor = angle;
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function setVizMode(mode) {
+  vizMode = mode;
+  document.querySelectorAll('.viz-tab').forEach(t => {
+    t.className = 'viz-tab';
+  });
+  const colorMap = {
+    wire: 'active',
+    neon: 'active-pink',
+    particles: 'active-green',
+    bone: 'active-orange',
+    matrix: 'active-green',
+    ghost: 'active-gray'
+  };
+  document.getElementById('viz-' + mode).classList.add(colorMap[mode] || 'active');
+}
+
+function setBodyMode(mode) {
+  bodyMode = mode;
+  ['face','body','both'].forEach(m => {
+    document.getElementById('tab-' + m).classList.toggle('active', m === mode);
+  });
+}
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+async function init() {
+  const loading = document.getElementById('loading');
+  const camError = document.getElementById('cam-error');
+
+  try {
+    // Start camera
+    loading.querySelector('small').textContent = 'Requesting camera access...';
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false
+    });
+    video.srcObject = stream;
+    await new Promise(r => { video.onloadedmetadata = r; });
+    video.play();
+
+    // Load MoveNet Thunder (more accurate) or Lightning (faster)
+    loading.querySelector('small').textContent = 'Loading MoveNet model...';
+    await tf.ready();
+    detector = await poseDetection.createDetector(
+      poseDetection.SupportedModels.MoveNet,
+      {
+        modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER,
+        enableSmoothing: true,
+      }
+    );
+
+    loading.style.display = 'none';
+    document.getElementById('status-text').textContent = 'LIVE';
+    detect();
+
+  } catch (err) {
+    console.error('Init error:', err);
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      loading.style.display = 'none';
+      camError.style.display = 'block';
+    } else {
+      // Try Lightning as fallback
+      try {
+        loading.querySelector('small').textContent = 'Trying Lightning model...';
+        if (!video.srcObject) {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          video.srcObject = stream;
+          await new Promise(r => { video.onloadedmetadata = r; });
+          video.play();
+        }
+        detector = await poseDetection.createDetector(
+          poseDetection.SupportedModels.MoveNet,
+          { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING, enableSmoothing: true }
+        );
+        loading.style.display = 'none';
+        detect();
+      } catch (e2) {
+        loading.querySelector('p').textContent = 'FAILED TO LOAD AI';
+        loading.querySelector('small').textContent = e2.message;
+      }
+    }
+  }
+}
+
+window.addEventListener('load', init);
+window.addEventListener('beforeunload', () => {
+  if (animId) cancelAnimationFrame(animId);
+  if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+});
+</script>
+</body>
+</html>
